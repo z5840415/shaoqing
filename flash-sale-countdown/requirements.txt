@@ -1,0 +1,18 @@
+# 闪购倒计时提醒工具 - 依赖项
+
+# 本项目仅使用 Python 标准库，无需安装额外依赖
+# Python 版本要求：>= 3.6
+
+# Tkinter 是 Python 自带的 GUI 库，通常已经包含在 Python 安装中
+# 如果在 Linux 系统上缺少 Tkinter，可以通过以下命令安装：
+
+# Ubuntu/Debian:
+# sudo apt-get install python3-tk
+
+# Fedora:
+# sudo dnf install python3-tkinter
+
+# macOS 和 Windows 系统通常已经包含 Tkinter
+
+# 如果需要打包成可执行文件，可以安装 PyInstaller：
+# pyinstaller>=5.0
