@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  # PostgreSQL数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: creator-hunter-db
+    environment:
+      POSTGRES_DB: creator_hunter
+      POSTGRES_USER: creator_hunter
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - creator-hunter-network
+    restart: unless-stopped
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: creator-hunter-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - creator-hunter-network
+    restart: unless-stopped
+
+  # 后端API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: creator-hunter-backend
+    environment:
+      DATABASE_URL: postgresql://creator_hunter:password@postgres:5432/creator_hunter
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    volumes:
+      - ./backend:/app
+      - /dev/shm:/dev/shm  # 为Playwright提供共享内存
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - creator-hunter-network
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Celery Worker
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: creator-hunter-celery
+    environment:
+      DATABASE_URL: postgresql://creator_hunter:password@postgres:5432/creator_hunter
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    volumes:
+      - ./backend:/app
+      - /dev/shm:/dev/shm
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - creator-hunter-network
+    restart: unless-stopped
+    command: celery -A app.tasks.celery_app worker --loglevel=info
+
+  # Celery Beat (定时任务)
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: creator-hunter-celery-beat
+    environment:
+      DATABASE_URL: postgresql://creator_hunter:password@postgres:5432/creator_hunter
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - creator-hunter-network
+    restart: unless-stopped
+    command: celery -A app.tasks.celery_app beat --loglevel=info
+
+  # 前端
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: creator-hunter-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - creator-hunter-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  creator-hunter-network:
+    driver: bridge
