@@ -1,0 +1,63 @@
+{
+  "name": "daren-hunter-desktop",
+  "version": "1.0.0",
+  "description": "AIGC达人自动化建联工具",
+  "main": "frontend/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && python main.py",
+    "dev:frontend": "electron . --dev",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "pack": "electron-builder --dir"
+  },
+  "build": {
+    "appId": "com.darenunter.desktop",
+    "productName": "达人猎手",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "frontend/**/*",
+      "backend/**/*",
+      "!backend/**/__pycache__",
+      "!backend/**/*.pyc"
+    ],
+    "extraResources": [
+      {
+        "from": "backend/dist",
+        "to": "backend"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "frontend/assets/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "frontend/assets/icon.icns"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0",
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "electron": "^27.0.0",
+    "electron-builder": "^24.6.4",
+    "concurrently": "^8.2.2"
+  }
+}
